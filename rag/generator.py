@@ -1,31 +1,49 @@
-from transformers import pipeline
+from transformers import T5ForConditionalGeneration, T5Tokenizer
+import torch
 
-_generator = None
+_model = None
+_tokenizer = None
 
 def _get_generator():
-    global _generator
-    if _generator is None:
+    global _model, _tokenizer
+    if _model is None:
         print("Loading generator model...")
-        _generator = pipeline("text2text-generation", model="google/flan-t5-base")
+        _tokenizer = T5Tokenizer.from_pretrained("google/flan-t5-base")
+        _model = T5ForConditionalGeneration.from_pretrained("google/flan-t5-base")
+        _model.eval()
         print("✅ Generator ready!")
-    return _generator
+    return _model, _tokenizer
 
 def generate_answer(query, context_chunks):
-    # Limit context to avoid exceeding 512 token limit
     context = " ".join(context_chunks)
-    context = context[:1000]  # trim to ~500 tokens worth of text
+    context = context[:1500]  # increased from 1000
 
-    prompt = f"""Answer the question using ONLY the context below.
+    prompt = f"""You are a helpful research assistant. Read the context carefully and write a complete, detailed answer to the question.
 
-Context:
-{context}
+Context: {context}
 
-Question:
-{query}
+Question: {query}
 
-Answer:"""
+Write a detailed answer in 2-3 sentences:"""
 
-    # Only use max_new_tokens, not max_length
-    generator = _get_generator()
-    result = generator(prompt, max_new_tokens=150, do_sample=False, truncation=True)
-    return result[0]["generated_text"]
+    model, tokenizer = _get_generator()
+
+    inputs = tokenizer(
+        prompt,
+        return_tensors="pt",
+        max_length=512,
+        truncation=True
+    )
+
+    with torch.no_grad():
+        outputs = model.generate(
+            inputs.input_ids,
+            max_new_tokens=200,      # increased from 150
+            num_beams=4,
+            early_stopping=True,
+            no_repeat_ngram_size=3,
+            length_penalty=2.0       # encourages longer answers
+        )
+
+    answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    return answer
