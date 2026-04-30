@@ -22,11 +22,8 @@ behaviour-aware polite responses in customer-care conversational systems.
 ## 🧠 How It Works
 
 ```
-PDF → Text Extraction → Chunking → Embeddings → FAISS Index
-                                                      ↓
-               Query → Embed Query → Semantic Search → Top-K Chunks
-                                                      ↓
-                              Chunks + Query → flan-t5-base → Answer
+<img width="1440" height="1808" alt="image" src="https://github.com/user-attachments/assets/91615691-0299-4821-b4a3-4fb42bcf4cdb" />
+
 ```
 
 This is a full RAG pipeline:
