@@ -21,10 +21,7 @@ behaviour-aware polite responses in customer-care conversational systems.
 
 ## 🧠 How It Works
 
-```
-<img width="1440" height="1808" alt="image" src="https://github.com/user-attachments/assets/91615691-0299-4821-b4a3-4fb42bcf4cdb" />
-
-```
+![How It Works](https://github.com/user-attachments/assets/0f57dc0f-9ec0-470d-93fd-c90fe0f7cc9a)
 
 This is a full RAG pipeline:
 
