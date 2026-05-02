@@ -1,49 +1,43 @@
-from transformers import T5ForConditionalGeneration, T5Tokenizer
-import torch
+import requests
 
-_model = None
-_tokenizer = None
-
-def _get_generator():
-    global _model, _tokenizer
-    if _model is None:
-        print("Loading generator model...")
-        _tokenizer = T5Tokenizer.from_pretrained("google/flan-t5-base")
-        _model = T5ForConditionalGeneration.from_pretrained("google/flan-t5-base")
-        _model.eval()
-        print("✅ Generator ready!")
-    return _model, _tokenizer
+OLLAMA_URL = "http://localhost:11434/api/generate"
+OLLAMA_MODEL = "llama3.2"
 
 def generate_answer(query, context_chunks):
-    context = " ".join(context_chunks)
-    context = context[:1500]  # increased from 1000
+    if not context_chunks:
+        return "I couldn't find relevant information to answer your question."
 
-    prompt = f"""You are a helpful research assistant. Read the context carefully and write a complete, detailed answer to the question.
+    context = "\n\n---\n\n".join(context_chunks)
 
-Context: {context}
+    prompt = f"""You are a helpful research assistant. Answer the question using only the context below. Be detailed and complete.
+
+Context:
+{context}
 
 Question: {query}
 
-Write a detailed answer in 2-3 sentences:"""
+Answer:"""
 
-    model, tokenizer = _get_generator()
-
-    inputs = tokenizer(
-        prompt,
-        return_tensors="pt",
-        max_length=512,
-        truncation=True
-    )
-
-    with torch.no_grad():
-        outputs = model.generate(
-            inputs.input_ids,
-            max_new_tokens=200,      # increased from 150
-            num_beams=4,
-            early_stopping=True,
-            no_repeat_ngram_size=3,
-            length_penalty=2.0       # encourages longer answers
+    try:
+        response = requests.post(
+            OLLAMA_URL,
+            json={
+                "model": OLLAMA_MODEL,
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.3,
+                    "num_predict": 300,
+                }
+            },
+            timeout=120
         )
+        response.raise_for_status()
+        return response.json()["response"].strip()
 
-    answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    return answer
+    except requests.exceptions.ConnectionError:
+        return "❌ Ollama is not running. Start it with: ollama serve"
+    except requests.exceptions.Timeout:
+        return "❌ Ollama timed out. Try a smaller model like phi3.5."
+    except Exception as e:
+        return f"❌ Generation failed: {e}"
