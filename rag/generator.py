@@ -9,14 +9,14 @@ def generate_answer(query, context_chunks):
 
     context = "\n\n---\n\n".join(context_chunks)
 
-    prompt = f"""You are a helpful research assistant. Answer the question using only the context below. Be detailed and complete.
+    prompt = f"""Answer the question with a short factual answer only. No explanation, no sentences. Just the answer value or name.
 
 Context:
 {context}
 
 Question: {query}
 
-Answer:"""
+Short answer:"""
 
     try:
         response = requests.post(
